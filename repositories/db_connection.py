@@ -165,7 +165,8 @@ def initialise_database():
                        );
                        """)
 
-        
+        # Check if Destinations table is empty before seeding.
+        # This prevents duplicate data entry on every application restart.
         cursor.execute("SELECT COUNT(*) FROM Destinations;")
         if (cursor.fetchone()[0] == 0):
             add_default_data(cursor)
