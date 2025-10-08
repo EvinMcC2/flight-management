@@ -41,7 +41,7 @@ class FlightRepository:
     def add_flight(self, flight_number, departure_id, arrival_id, departure_time, arrival_time, status):
         conn = get_connection()
         if conn is None:
-            return False
+            return None
         
         insert_query = """
         INSERT INTO Flights (flight_number, departure_id, arrival_id, departure_time, arrival_time, status)
@@ -51,11 +51,13 @@ class FlightRepository:
         try:
             cursor = conn.cursor()
             cursor.execute(insert_query, (flight_number, departure_id, arrival_id, departure_time, arrival_time, status))
+            new_flight_id = cursor.lastrowid
             conn.commit()
-            return True
+            
+            return new_flight_id
         except sqlite3.Error as e:
             print(f"Database error during add_flight: {e}")
-            return False
+            return None
         finally:
             conn.close()
 

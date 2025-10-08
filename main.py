@@ -14,6 +14,8 @@ from services.user_service import UserService
 # username: admin
 # password: Password1
 
+# Note for future projects: I will try the questionary library, to make it nicer to deal with these menus as a user.
+
 CURRENT_USER_ROLE = None
 VALID_ROLES = ['admin', 'manager', 'user']
 running = True
@@ -26,46 +28,13 @@ MENU_MAP = {
     '3': ('Add a New Flight', ['admin', 'manager']),
     '4': ('Update Flight Information', ['admin', 'manager']),
     '5': ('Manage Pilots', ['admin', 'manager']),
-    '6': ('View/Update Destinations', ['admin', 'manager']),
-    '7': ('Delete a Flight', ['admin']),
-    '8': ('Delete flights that have been cancelled', ['admin']),
-    '9': ('Delete flights that have already departed', ['admin']),
-    '10': ('Delete all flights without a pilot assigned', ['admin']),
-    '11': ('Exit Application', ['admin', 'manager', 'user']),
+    '6': ('Exit Application', ['admin', 'manager', 'user']),
 }
-
-
-# o	Add a New Flight
-# o	View Flights by Criteria
-# o	Update Flight Information
-# o	Assign Pilot to Flight
-# o	View Pilot Schedule
-# o	View/Update Destination Information
-
-# def display_menu():
-#   print("\n--- Flight Management System ---")
-#   print("1. View All Flights")
-#   print("2. Search for a Flight")
-#   print("3. Add a New Flight") # TODO() this must also allow assigning a pilot to the flight
-#   print("4. Update Flight Information")
-#   print("5. Manage Pilots")
-#   print("6. View/Update Destinations")
-#   print("7. Delete a Flight") # this must also delete any pilot assignments for that flight
-#   print("8. Delete flights that have been cencelled") # this must also delete any pilot assignments for that flight
-#   print("9. Delete flights that have already departed") # this must also delete any pilot assignments for that flight
-#   print("10. Delete all flights without a pilot assigned")
-#   print("11. Exit Application")
-#   try:
-#       choice = input("Enter your choice (1-7): ")
-#       return choice.strip()
-#   except Exception:
-#       return None
 
 def display_menu(role):
 
     print(f"\n--- Flight Management System ({role.upper()}) ---")
     
-    # We use a list to store only the valid menu numbers for this role
     available_choices = []
 
     for choice_num, (description, allowed_roles) in MENU_MAP.items():
@@ -101,13 +70,13 @@ def check_permission(choice_num):
             print(f"Allowed roles: {', '.join(allowed_roles)}")
             print(f"-------------------------\n")
             return False
-    # If the choice is not in the map, it's either Exit or an invalid choice, handled elsewhere
     return True
 
 
 def initial_login_prompt(user_service):
     print("Welcome to the Flight Management System.")
     print("Available demonstration roles: admin, manager, user")
+    print("username: admin || password: Password1")
     
     while True:
         username = input("Enter your username to continue: ").strip()
@@ -175,16 +144,15 @@ def get_valid_datetime_input(prompt, datetime_format='%Y-%m-%d %H:%M', allowNull
 
 def get_valid_pilot_id_input(prompt, pilot_service):
     while True:
+        display_data(pilot_service.get_all_pilots(), "Available Pilots:")
         pilot_id = get_valid_integer_input(prompt)
         if pilot_service.get_pilot_by_id(pilot_id):
             return pilot_id
         else:
             print(f"Error: Pilot ID '{pilot_id}' is invalid or does not exist.")
-            print("\nAvailable Pilots:")
-            print(pilot_service.get_all_pilots())
 
 
-def display_flights_table(flights_data): # TODO - use this function below
+def display_flights_table(flights_data):
     if not flights_data:
         print("No flights found.")
         return
@@ -197,19 +165,61 @@ def display_flights_table(flights_data): # TODO - use this function below
     print(df.to_string(index=False))
 
 
+def display_data(raw_data, title=""):
+    if not raw_data:
+        return f"--- {title} ---\nNo data available."
+    
+    # does not crash when dealing with a single record in a dict
+    if isinstance(raw_data, dict):
+        data_to_display = [raw_data]
+    else:
+        data_to_display = raw_data
+    
+    df = pd.DataFrame(data_to_display)
+    
+    header = f"--- {title} ---\n"
+    table_string = df.to_string(index=False)
+    
+    print(header + table_string)
+
+
 def pilotMenu():
     print("\n--- Pilot Management ---")
     print("1. View All Pilots")
     print("2. Add a New Pilot")
     print("3. Update Pilot Information")
-    print("4. View Pilot Schedule (Placeholder)")
-    print("5. Return to Main Menu")
+    print("4. View Pilot Schedule")
+    print("5. View All Pilot Schedules")
+    print("6. Return to Main Menu")
     try:
         choice = input("Enter your choice (1-5): ")
         return choice.strip()
     except Exception:
         return None
+
+def assign_pilot_to_new_flight(pilot_service, new_flight_id):
     
+    while True:
+        pilot_id = get_valid_pilot_id_input("Enter the Pilot ID to assign: ", pilot_service)
+        
+        if pilot_id is None:
+            print("Pilot assignment cancelled.")
+            return False
+
+        assignment_role = input("Enter the pilot's role (e.g., Captain, First Officer): ").strip()
+        if not assignment_role:
+            print("Assignment role cannot be empty. Please try again.")
+            continue
+            
+        schedule_success = pilot_service.schedule_pilot_for_flight(
+            pilot_id, new_flight_id, assignment_role)
+            
+        if schedule_success:
+            print(f"Pilot ID {pilot_id} successfully assigned as '{assignment_role}'.")
+            return True
+        else:
+            print(f"Failed to create schedule entry for Pilot ID {pilot_id}. Please check the ID or database status and try again.")
+
 
 def pilot_management_loop(pilot_service):
     while True:
@@ -217,8 +227,7 @@ def pilot_management_loop(pilot_service):
 
         if pilot_choice == '1':
             pilots = pilot_service.get_all_pilots()
-            print("\nAll Pilots")
-            print(f"{pilots}\n")
+            display_data(pilots, "All Pilots")
             
         elif pilot_choice == '2':
             print("\nAdd New Pilot")
@@ -238,9 +247,7 @@ def pilot_management_loop(pilot_service):
                 
         elif pilot_choice == '3':
             print("\nUpdate Pilot Information")
-            
-            print("\nCurrent Pilots:")
-            print(pilot_service.get_all_pilots())
+            display_data(pilot_service.get_all_pilots(), "Current Pilots:")
             pilot_id = get_valid_pilot_id_input("Enter the ID of the pilot to update: ", pilot_service)
             
             existing_pilot = pilot_service.get_pilot_by_id(pilot_id)
@@ -266,8 +273,17 @@ def pilot_management_loop(pilot_service):
         elif pilot_choice == '4':
             print("\nAction: View Pilot Schedule. (Functionality to be implemented when flight assignment is added).\n")
             # need to create flight assignment respository and service 
+            display_data(pilot_service.get_all_pilots(), "Current Pilots")
+            pilot_id = get_valid_pilot_id_input("Enter the ID of the pilot to update: ", pilot_service)
 
+            schedule = pilot_service.get_pilot_schedule(pilot_id)
+            display_data(schedule)
+        
         elif pilot_choice == '5':
+            schedule = pilot_service.get_all_schedules()
+            display_data(schedule, "All Pilot Schedules")
+
+        elif pilot_choice == '6':
             print("Returning to Main Menu.")
             break
         
@@ -346,22 +362,20 @@ while running:
         )
         status = input("Enter the flight status ( Scheduled, Delayed, Cancelled): ")
     
-        result = flight_service.add_new_flight(
+        flight_id = flight_service.add_new_flight(
             flight_number, departure_id, arrival_id, departure_time, arrival_time, status)
         
-        if result:
-            print("\nNew flight added successfully.\n")
+        if flight_id:
+            success = assign_pilot_to_new_flight(pilot_service ,flight_id)
+            if success:
+                # only print this output if successful - otherwise it is harder for user to see reason why it failed (such as flight_number not being unique)
+                print("\nNew flight added successfully and pilot scheduled.\n")
+                output_table = flight_service.get_all_flights()
+                print(output_table)
         else:
             print("\nFailed to add new flight.\n")
-    
-    # print flights either result
-        output_table = flight_service.get_all_flights()
-        print(output_table)
 
     elif choice == '4':
-        # update flight information
-        # e.g., change status, reschedule times, etc.
-        # could reuse some of the input validation from adding a new flight
         print("\nAction: Viewing All Flights...")
         output_table = flight_service.get_all_flights()
         print(f"\n{output_table}\n")
@@ -372,13 +386,7 @@ while running:
             print(f"No flights found with flight: {flight_number}")
             continue
 
-        df = pd.DataFrame([flight_data])
-        df.columns = [
-            'ID', 'Flight Number', 'Dep. Code', 'Dep. City', 'Arr. Code', 
-            'Arr. City', 'Departure Time', 'Arrival Time', 'Status'
-        ]
-        print("Current flight details:")
-        print(f"\n{df.to_string(index=False)}\n")
+        display_data(flight_data, "Current flight details:")
 
         flight_number = input(f"Update flight number {flight_data["flight_number"]} or leave empty and enter: ")
         if not flight_number:
@@ -419,24 +427,12 @@ while running:
             print(f"Flight data failed to update: {flight_number}")
             continue
 
-        df = pd.DataFrame([flight_data])
-        df.columns = [
-            'ID', 'Flight Number', 'Dep. Code', 'Dep. City', 'Arr. Code', 
-            'Arr. City', 'Departure Time', 'Arrival Time', 'Status'
-        ]
-        print("Current flight details:")
-        print(f"\n{df.to_string(index=False)}\n")
+        display_data(flight_data)
 
     elif choice == '5':
         pilot_management_loop(pilot_service)
-
-    elif choice == '6':
-
-        print("View/Update Destinations - Functionality to be implemented")
-        # view/update destinations
-        # e.g., add new destination, update existing destination info, etc.
         
-    elif choice == '7':
+    elif choice == '6':
         print("\nExiting application. Goodbye!\n")
         running = False
         

@@ -1,11 +1,10 @@
-
-import pandas as pd
 from repositories.pilot_repository import PilotRepository
-
+from repositories.pilot_schedule_repository import PilotScheduleRepository
 
 class PilotService:
     def __init__(self):
         self.repository = PilotRepository()
+        self.schedule_repository = PilotScheduleRepository()
 
     def get_all_pilots(self):
         pilots_data = self.repository.get_all_pilots()
@@ -13,8 +12,7 @@ class PilotService:
         if not pilots_data:
             return "No pilots found in the system."
         
-        df = pd.DataFrame(pilots_data)
-        return df.to_string(index=False)
+        return pilots_data
     
     def add_pilot(self, first_name, last_name, license_number):
         if self.get_pilot_by_license(license_number):
@@ -58,3 +56,17 @@ class PilotService:
         else:
             print("Update failed due to a database error.")
             return None
+        
+    def get_pilot_schedule(self, pilot_id):
+        schedule_data = self.schedule_repository.get_schedule_by_pilot_id(pilot_id)
+    
+        return schedule_data 
+    
+    def get_all_schedules(self):
+        schedule_data = self.schedule_repository.get_all_pilots_schedule()
+        return schedule_data
+
+    def schedule_pilot_for_flight(self, pilot_id: int, flight_id: int, role: str) -> bool:
+        schedule_id = self.schedule_repository.add_pilot_schedule(pilot_id, flight_id, role)
+        
+        return schedule_id is not None

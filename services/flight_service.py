@@ -23,9 +23,9 @@ class FlightService:
         return df.to_string(index=False)
     
     def add_new_flight(self, flight_number, departure_id, arrival_id, departure_time, arrival_time, status):
-        completed = self.repository.add_flight(
+        flight_id = self.repository.add_flight(
             flight_number, departure_id, arrival_id, departure_time, arrival_time, status)
-        return completed
+        return flight_id
     
     def get_flight_by_number(self, flight_number):
         flight_data = self.repository.get_flight_by_number(flight_number)
