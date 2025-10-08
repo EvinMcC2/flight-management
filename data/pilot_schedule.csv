@@ -1,0 +1,16 @@
+flight_number,pilot_license,assignment_role
+FL101,LN123456,Captain
+FL101,LN789012,First Officer
+FL102,LN345678,Captain
+FL102,LN901234,First Officer
+FL103,LN567890,Captain
+FL104,LN112233,First Officer
+FL105,LN445566,Captain
+FL105,LN778899,First Officer
+FL106,LN889900,Captain
+FL107,LN001122,First Officer
+FL108,LN334455,Captain
+FL109,LN667788,Captain
+FL110,LN990011,First Officer
+FL111,LN223344,Captain
+FL112,LN556677,First Officer

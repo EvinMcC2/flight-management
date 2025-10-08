@@ -1,3 +1,0 @@
-
-
-# Pilot table CRUD
